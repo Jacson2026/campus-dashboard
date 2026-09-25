@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>校招工作台 · 投递管理</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --card:#ffffff; --line:#e6e9f0; --ink:#1a1d29; --sub:#6b7280;
+    --brand:#4f46e5; --brand2:#6366f1; --brand-soft:#eef2ff;
+    --green:#16a34a; --green-soft:#e8f7ee; --amber:#d97706; --amber-soft:#fdf3e3;
+    --red:#dc2626; --red-soft:#fdecec; --blue:#2563eb; --blue-soft:#e8f0fd;
+    --gray:#9ca3af; --gray-soft:#f1f2f4; --purple:#7c3aed; --purple-soft:#f2ebfd;
+    --cyan:#0891b2; --cyan-soft:#e6f7f9; --orange:#ea580c; --orange-soft:#fdeee4;
+    --radius:14px; --shadow:0 1px 3px rgba(16,24,40,.06),0 6px 18px rgba(16,24,40,.05);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 20px 60px}
+
+  /* header */
+  header.top{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .nav{max-width:1200px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:24px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}
+  .brand .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--brand),#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
+  .tabs{display:flex;gap:6px;margin-left:8px}
+  .tab{padding:9px 16px;border-radius:10px;border:none;background:transparent;font-size:14px;font-weight:600;color:var(--sub);cursor:pointer;transition:.15s}
+  .tab:hover{background:var(--gray-soft)}
+  .tab.active{background:var(--brand-soft);color:var(--brand)}
+  .nav-right{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--sub)}
+  .sync-btn{background:var(--brand);color:#fff;border:none;padding:8px 14px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer}
+  .sync-btn:hover{background:var(--brand2)}
+
+  .page{display:none;animation:fade .25s ease}
+  .page.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  h1.page-title{font-size:24px;margin:28px 0 4px;font-weight:750}
+  p.page-sub{color:var(--sub);font-size:14px;margin-bottom:20px}
+
+  /* stat cards */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:20px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+  .stat .num{font-size:28px;font-weight:800;line-height:1}
+  .stat .lbl{font-size:12.5px;color:var(--sub);margin-top:6px}
+  .stat.brand{color:var(--brand)}.stat.green{color:var(--green)}.stat.amber{color:var(--amber)}.stat.red{color:var(--red)}.stat.blue{color:var(--blue)}.stat.gray{color:var(--gray)}.stat.purple{color:var(--purple)}
+
+  /* funnel */
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:20px}
+  .panel h3{font-size:15px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .funnel{display:flex;flex-direction:column;gap:8px}
+  .fstep{display:flex;align-items:center;gap:12px}
+  .fstep .name{width:72px;font-size:13px;font-weight:600;flex-shrink:0}
+  .fstep .bar-wrap{flex:1;height:26px;background:var(--gray-soft);border-radius:6px;overflow:hidden;position:relative}
+  .fstep .bar{height:100%;border-radius:6px;transition:width .4s ease;display:flex;align-items:center}
+  .fstep .bar span{padding-left:10px;color:#fff;font-size:12px;font-weight:700}
+  .fstep .cnt{width:44px;text-align:right;font-size:13px;font-weight:700;flex-shrink:0}
+
+  /* filters */
+  .filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
+  .filter-group{position:relative}
+  .filter-input,.search-input{padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:13.5px;min-width:120px}
+  .filter-input:focus,.search-input:focus{outline:2px solid var(--brand-soft);border-color:var(--brand2)}
+  .search-input{min-width:200px;flex:1}
+
+  .badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:600}
+  .tag-row{display:flex;flex-wrap:wrap;gap:6px}
+  .tag{cursor:pointer;padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:600;background:var(--gray-soft);color:var(--sub);border:1px solid transparent;transition:.15s}
+  .tag:hover{border-color:var(--line)}
+  .tag.active{background:var(--brand-soft);color:var(--brand);border-color:var(--brand2)}
+
+  /* tables */
+  .table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:760px;background:#fff}
+  th{background:#fafbfd;text-align:left;padding:12px 14px;font-weight:600;color:var(--sub);border-bottom:1px solid var(--line);font-size:12.5px;white-space:nowrap}
+  td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:#fafbff}
+  .comp{font-weight:700}
+  .sub{color:var(--sub);font-size:12px;margin-top:3px}
+  .link{color:var(--blue);text-decoration:none;word-break:break-all}
+  .link:hover{text-decoration:underline}
+  .status-sel{border:1px solid var(--line);border-radius:7px;padding:5px 8px;font-size:12.5px;background:#fff;cursor:pointer}
+  .status-pill{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px}
+  .st-待投递{background:var(--gray-soft);color:var(--gray)}
+  .st-已投递{background:var(--blue-soft);color:var(--blue)}
+  .st-待测评{background:var(--orange-soft);color:var(--orange)}
+  .st-已测评{background:var(--cyan-soft);color:var(--cyan)}
+  .st-笔试中{background:var(--amber-soft);color:var(--amber)}
+  .st-面试中{background:var(--purple-soft);color:var(--purple)}
+  .st-已Offer{background:var(--green-soft);color:var(--green)}
+  .st-已拒绝{background:var(--red-soft);color:var(--red)}
+  .st-未通过{background:var(--red-soft);color:var(--red)}
+  .st-简历挂{background:var(--red-soft);color:var(--red)}
+  .st-三面综合面挂{background:var(--red-soft);color:var(--red)}
+
+  /* catalog cards */
+  .cats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+  .cat-chips{display:flex;flex-wrap:wrap;gap:8px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  .ccard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px;transition:.15s}
+  .ccard:hover{border-color:var(--brand2);transform:translateY(-2px)}
+  .ccard .cname{font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px}
+  .ccard .cloc{font-size:12.5px;color:var(--sub)}
+  .ccard .copen{font-size:12px;margin-top:auto;padding-top:8px;color:var(--green);font-weight:600}
+  .cstatus-closed{color:var(--red)}
+  .ctype{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--brand-soft);color:var(--brand)}
+
+  .empty{text-align:center;color:var(--sub);padding:40px 0;font-size:14px}
+
+  /* actions */
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .btn{padding:9px 14px;border-radius:9px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink)}
+  .btn:hover{background:var(--gray-soft)}
+  .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .btn.primary:hover{background:var(--brand2)}
+  .btn.danger{color:var(--red)}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;box-shadow:0 6px 24px rgba(0,0,0,.2);z-index:100;opacity:0;pointer-events:none;transition:.3s}
+  .toast.show{opacity:1}
+
+  .foot{text-align:center;color:var(--sub);font-size:12px;margin-top:40px;padding-top:20px;border-top:1px solid var(--line)}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--sub)}
+  .legend b{color:var(--ink)}
+  .note{background:var(--amber-soft);border:1px solid #f3ddb0;color:#8a5a10;padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:18px}
+  .mt-16{margin-top:16px}
+  .flex-between{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+  .muted{color:var(--sub)}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="nav">
+    <div class="brand"><div class="logo">招</div>校招工作台</div>
+    <div class="tabs">
+      <button class="tab active" data-page="catalog">校招企业库</button>
+      <button class="tab" data-page="board">投递工作台</button>
+    </div>
+    <div class="nav-right">
+      <span id="syncTime">数据存于本地</span>
+      <button class="sync-btn" id="exportBtn">导出 CSV</button>
+      <label class="sync-btn" style="background:#2563eb;cursor:pointer">导入 CSV<input type="file" id="importFile" accept=".csv" hidden></label>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- ============ 页面一：校招企业库 ============ -->
+  <div class="page active" id="catalog">
+    <h1 class="page-title">校招企业库</h1>
+    <p class="page-sub">按行业分类汇总开放 2027 届校招的企业。点击"官网"直达投递入口；名单会随秋招进程更新，以各企业官网实际开放情况为准。</p>
+    <div class="note">💡 数据来源：联网核实各企业官方校招入口整理（2026-09 更新）。投递前请以企业官网公告为准。</div>
+
+    <div class="cats">
+      <div class="filter-group"><input class="search-input" id="catSearch" placeholder="搜索企业名称…"></div>
+      <div class="cat-chips" id="catChips"></div>
+    </div>
+    <div class="grid" id="catalogGrid"></div>
+    <div class="empty" id="catEmpty" style="display:none">没有匹配的企业，换个关键词试试</div>
+  </div>
+
+  <!-- ============ 页面二：投递工作台 ============ -->
+  <div class="page" id="board">
+    <div class="flex-between">
+      <div>
+        <h1 class="page-title">投递工作台</h1>
+        <p class="page-sub">跟踪你投递的每一家企业与岗位，一键更新状态、看招聘漏斗。飞书表仍是主账本，可随时导入 / 导出 CSV 同步。</p>
+      </div>
+      <div class="actions" style="margin-bottom:0">
+        <button class="btn" id="addRowBtn">＋ 新增记录</button>
+      </div>
+    </div>
+
+    <div class="stats" id="statCards"></div>
+
+    <div class="panel">
+      <h3>招聘漏斗</h3>
+      <div class="funnel" id="funnel"></div>
+    </div>
+
+    <div class="panel">
+      <h3>筛选</h3>
+      <div class="filters">
+        <input class="search-input" id="fCompany" placeholder="按企业 / 岗位搜索…">
+        <div class="filter-group"><select class="filter-input" id="fStatus"><option value="">全部状态</option></select></div>
+        <div class="filter-group"><input class="filter-input" id="fLoc" placeholder="工作地点" style="min-width:110px"></div>
+        <div class="filter-group"><select class="filter-input" id="fApplied"><option value="">是否已投(全部)</option><option value="已投">已投</option><option value="待投">待投</option></select></div>
+      </div>
+      <div class="flex-between mt-16">
+        <div class="legend" id="typeLegend"></div>
+        <button class="btn" id="clearFilter">清除筛选</button>
+      </div>
+      <div class="mt-16 table-scroll">
+        <table>
+          <thead><tr>
+            <th>公司</th><th>属性</th><th>岗位</th><th>地点</th><th>投递日期</th><th>状态(点击更新)</th><th>官网</th><th>备注</th>
+          </tr></thead>
+          <tbody id="boardBody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="boardEmpty" style="display:none">暂无符合筛选的记录</div>
+    </div>
+
+    <div class="note mt-16" id="syncNote">
+      数据同步方式：飞书「2027届秋招投递管理系统」为主账本。操作：在飞书表维护后导出 CSV → 本页"导入 CSV"读取；或在本页修改后"导出 CSV"回填飞书。修改仅保存于本机浏览器。
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ==================== 状态定义 ==================== */
+const STATUSES = ["待投递","已投递","待测评","已测评","笔试中","面试中","已Offer","已拒绝","未通过","简历挂","三面综合面挂"];
+const TYPES = ["互联网","制造业","手机厂","车企","银行","央国企","通信","事务所"];
+
+/* 漏斗阶段优先级：结果态 > 面试 > 笔试 > 测评 > 已投 > 待投 */
+function funnelStage(statuses){
+  const s = statuses || [];
+  if(s.includes("已Offer")) return "Offer";
+  if(s.includes("已拒绝")||s.includes("未通过")||s.includes("简历挂")||s.includes("三面综合面挂")) return "淘汰";
+  if(s.includes("面试中")) return "面试";
+  if(s.includes("笔试中")) return "笔试";
+  if(s.includes("待测评")||s.includes("已测评")) return "测评";
+  if(s.includes("已投递")) return "已投";
+  return "待投";
+}
+const STAGES = ["待投","已投","测评","笔试","面试","Offer","淘汰"];
+const STAGE_COLORS = {"待投":"#9ca3af","已投":"#2563eb","测评":"#0891b2","笔试":"#d97706","面试":"#7c3aed","Offer":"#16a34a","淘汰":"#dc2626"};
+
+/* ==================== 种子数据（来自飞书表） ==================== */
+const SEED = [
+["字节跳动","互联网","行业产品运营","北京/上海/深圳/杭州",["已投递","简历挂"],"2026-09-14","https://jobs.bytedance.com/campus","只能投递2次，第二次不敢投递了，想投市场营销，但门槛高"],
+["腾讯","互联网","产品运营","深圳/北京/成都",["已投递"],"2026-09-09","https://join.qq.com","门槛太高一直没有面试推进"],
+["美团","互联网","ai产品运营岗","北京/上海",["已投递"],"2026-09-14","https://campus.meituan.com",""],
+["百度","互联网","销售运营","北京/上海",["已投递"],"2026-09-14","",""],
+["京东","互联网","产品运营","北京",["已测评"],"2026-09-14","https://campus.jd.com","总感觉。。。得投市场岗才行"],
+["网易","互联网","网易互联网-运营；网易互娱-品牌管培生","杭州/北京/广州/上海",["已投递"],"2026-09-21","https://campus.163.com",""],
+["快手","互联网","市场营销与策划","北京",["已投递"],"2026-09-21","https://campus.kuaishou.cn",""],
+["拼多多","互联网","市场管培生","上海",["已投递"],"2026-09-21","https://careers.pinduoduo.com/campus",""],
+["滴滴","互联网","","",["待投递"],"","",""],
+["小红书","互联网","","",["待投递"],"","",""],
+["携程","互联网","产品运营","上海",["已投递"],"2026-09-21","https://campus.ctrip.com",""],
+["拓竹","","","",["待投递"],"","",""],
+["美的","制造业","","",["待投递"],"","",""],
+["米哈游","互联网","","上海",["待投递"],"","https://campus.mihoyo.com",""],
+["虹软科技","互联网","PSAI管培生（时尚AI视觉全球业务与商业化方向）","杭州",["已投递"],"2026-09-21","https://www.arcsoft.com.cn/job/JobList.html",""],
+["中通快递","互联网","","上海",["待投递"],"","https://hr.zto.com",""],
+["传音控股","互联网","AI产品运营","重庆",["已投递"],"2026-09-09","https://transsion.zhiye.com/campus/jobs",""],
+["华为","互联网","消费者管培","东莞",["待测评"],"2026-09-14","https://career.huawei.com/cn/campus-recruitment-job-list?recruitmentType=FRESH_GRADUATE","用的是市场岗的简历"],
+["小米","手机厂","渠道零售运营","北京",["已投递"],"2026-09-24","https://xiaomi.jobs.f.mioffice.cn/campus/?spread=J7NS6YR",""],
+["oppo","互联网/手机厂","产品运营（本来想投市场管培的但是不能结束了）","成都、东莞",["已投递"],"2026-09-13","https://careers.oppo.com/university/oppo/campus/post?recruitType=Graduate","第一志愿不能改了"],
+["vivo","手机厂","产品营销","东莞",["已投递"],"2026-09-22","https://hr-campus.vivo.com/form?fromPage=myResume",""],
+["荣耀","手机厂","销售","全国",["已投递"],"2026-09-22","https://career.honor.com/SU60eea919bef57c1023f6fe78/pb/posDetail.html?postId=6a83c53b43154813049f228a&postType=campus",""],
+["江波龙","互联网","电商营销","深圳",["已投递"],"2026-09-15","https://longsys.zhiye.com/campus/jobs",""],
+["cvte","互联网","销售经理","广州",["面试中","三面综合面挂"],"2026-09-15","","最后综合面暂时没过唉9.17"],
+["联想","互联网","市场营销","北京",["已投递"],"2026-09-16","https://talent.lenovo.com.cn/position?jobTypeName=市场与销售方向",""],
+["诺瓦星云","互联网","营销管培生","全国",["已投递"],"2026-09-21","https://novastar.zhiye.com/campus/jobs",""],
+["中兴通讯","通信","MKT-商务","海外",["已测评"],"2026-09-17","",""],
+["烽火通信","通信","","",["待投递"],"","https://app.mokahr.com/campus-recruitment/whfhtx/73922#/job/0faf20cd-5808-4aaa-a3ba-35ac82cbf5b3","专业壁垒还挺高的，想投售前"],
+["宁德时代","制造业","","",["待投递"],"","",""],
+["海联达","通信","售前","广东",["待测评"],"2026-09-18","",""],
+["上海浦东发展银行","银行/央国企","","",["待投递"],"","","这个简历填得太老火了我服了"],
+["西南证券","央国企/银行","销售-业务经理","重庆",["已投递"],"2026-09-21","https://wecruit.hotjob.cn/SU61d3efeabef57c13bcba2eea/pb/account.html#/myDeliver",""],
+["平安证券","央国企/银行","","",["待投递"],"","",""],
+["中国平安银行","银行/央国企","运营、市场管培生","重庆",["已投递"],"2026-09-23","https://campus.pingan.com/freshGraduates",""],
+["天健事务所-重庆","事务所","管理咨询","重庆",["已投递"],"2026-09-21","https://zhaopin.pccpa.cn/hr/recruit/school?jobWorkCityList=4","这个只是随便投的，不考虑感觉很累很无趣"],
+["特斯拉","车企/制造业","服务专员-重庆","重庆",["已投递"],"2026-09-21","",""],
+["塞力斯","车企","渠道专员","重庆",["已测评","已投递"],"2026-09-20","https://sokon.zhiye.com/",""],
+["长安","车企","长安凯程-数字营销(J28472)","重庆",["已投递"],"2026-09-21","https://changan.zhiye.com/campus/jobs",""],
+["比亚迪","车企","高级销售数据分析专员、产品策略","深圳",["已投递"],"2026-09-23","https://job.byd.com/portal/pc/#/school/home",""],
+["基恩士","制造业","销售工程师","全国",["未通过","简历挂"],"2026-09-19","","半夜投了立马就挂了，感觉应该是不招了"],
+["台达电子","制造业","QE工程师","重庆",["已投递"],"2026-09-21","https://www.delta-china.com.cn/zh-CN/career/join","md怎么是跳转到前程无忧上面投递"],
+["兴旺达","制造业","","",["待投递"],"","",""],
+["深信服","","","",["待投递"],"","",""],
+["牧原","制造业","","",["待投递"],"","",""],
+["认养一头牛","","","",["待投递"],"","",""]
+];
+
+/* ==================== 企业库数据（联网核实整理） ==================== */
+const CATALOG = [
+  // 互联网
+  ["字节跳动","互联网","北京/上海/深圳/杭州","https://jobs.bytedance.com/campus",true],
+  ["腾讯","互联网","深圳/北京/成都/上海","https://join.qq.com",true],
+  ["阿里巴巴","互联网","杭州/北京/上海","https://campus-talent.alibaba.com/?lang=zh",true],
+  ["美团","互联网","北京/上海/深圳","https://campus.meituan.com",true],
+  ["京东","互联网","北京/上海/成都","https://campus.jd.com",true],
+  ["百度","互联网","北京/上海/深圳","https://talent.baidu.com",true],
+  ["网易","互联网","杭州/北京/广州/上海","https://campus.163.com",true],
+  ["快手","互联网","北京/杭州/上海","https://campus.kuaishou.cn",true],
+  ["拼多多","互联网","上海","https://careers.pinduoduo.com/campus",true],
+  ["滴滴","互联网","北京/上海/杭州","https://talent.didiglobal.com",true],
+  ["小红书","互联网","上海/北京","https://job.xiaohongshu.com",true],
+  ["携程","互联网","上海/北京","https://campus.ctrip.com",true],
+  ["哔哩哔哩","互联网","上海/北京/广州","https://jobs.bilibili.com",true],
+  ["米哈游","互联网","上海/北京","https://campus.mihoyo.com",true],
+  ["网易游戏(互娱)","互联网","广州/杭州/上海","https://campus.163.com",true],
+  ["联想","互联网","北京/深圳","https://talent.lenovo.com.cn",true],
+  ["诺瓦星云","互联网","全国","https://novastar.zhiye.com/campus/jobs",true],
+  ["虹软科技","互联网","杭州","https://www.arcsoft.com.cn/job/JobList.html",true],
+  ["中通快递","互联网","上海/全国","https://hr.zto.com",true],
+  ["江波龙","互联网","深圳","https://longsys.zhiye.com/campus/jobs",true],
+  // 制造业
+  ["美的","制造业","佛山/合肥/上海","https://career.midea.com",true],
+  ["格力","制造业","珠海","https://www.hr.gree.com",true],
+  ["海尔","制造业","青岛/全国","https://maker.haier.net/campus",true],
+  ["台达电子","制造业","东莞/重庆","https://www.delta-china.com.cn/zh-CN/career/join",true],
+  ["蓝思科技","制造业","长沙/深圳","http://hr.lens.com",true],
+  ["宁德时代","制造业","宁德/上海/溧阳","https://catl.zhiye.com",true],
+  ["汇川技术","制造业","深圳/苏州","https://invt.zhiye.com",true],
+  ["中联重科","制造业","长沙","https://zoomlion.zhiye.com",true],
+  ["立讯精密","制造业","东莞/昆山","https://luxshare.zhiye.com",true],
+  ["大疆","制造业","深圳","https://we.dji.com",true],
+  ["基恩士","制造业","全国","https://keyence.zhiye.com",true],
+  ["牧原","制造业","河南/全国","https://muyuan.zhiye.com",true],
+  // 手机厂
+  ["小米","手机厂","北京/深圳/武汉","https://xiaomi.jobs.f.mioffice.cn/campus",true],
+  ["OPPO","手机厂","深圳/东莞/成都","https://careers.oppo.com",true],
+  ["vivo","手机厂","东莞/深圳","https://hr.vivo.com",true],
+  ["荣耀","手机厂","深圳/北京/西安","https://career.honor.com",true],
+  ["华为(终端)","手机厂","深圳/东莞/上海","https://career.huawei.com",true],
+  ["传音控股","手机厂","深圳/重庆","https://transsion.zhiye.com/campus/jobs",true],
+  // 车企
+  ["比亚迪","车企","深圳/全国","https://job.byd.com/portal/pc/#/school/home",true],
+  ["长安汽车","车企","重庆","https://changan.zhiye.com/campus/jobs",true],
+  ["赛力斯","车企","重庆/全国","https://sokon.zhiye.com/",true],
+  ["特斯拉","车企","上海/重庆","https://www.tesla.com/careers",true],
+  ["蔚来","车企","上海/北京/合肥","https://nio.zhiye.com",true],
+  ["理想","车企","北京/上海/常州","https://lixiang.zhiye.com",true],
+  ["小鹏","车企","广州/上海/武汉","https://xiaopeng.zhiye.com",true],
+  ["吉利控股","车企","杭州/全国","https://campus.geely.com",true],
+  ["东风汽车","车企","武汉/十堰","https://dfmc.zhiye.com",true],
+  ["中国一汽","车企/央国企","长春/全国","https://faw.zhiye.com",true],
+  ["北汽集团","车企/央国企","北京","https://baicgroup.zhiye.com",true],
+  // 银行
+  ["中国工商银行","银行/央国企","全国","https://job.icbc.com.cn",true],
+  ["中国建设银行","银行/央国企","全国","http://job.ccb.com",true],
+  ["中国农业银行","银行/央国企","全国","https://career.abchina.com.cn",true],
+  ["中国银行","银行/央国企","全国","https://campus.boc.cn",true],
+  ["交通银行","银行/央国企","全国","https://job.bankcomm.com",true],
+  ["邮储银行","银行/央国企","全国","https://psbc2027.zhaopin.com",true],
+  ["招商银行","银行/央国企","全国","https://career.cmbchina.com",true],
+  ["中国平安银行","银行/央国企","全国","https://campus.pingan.com",true],
+  ["浦发银行","银行/央国企","上海/全国","https://job.spdb.com.cn",true],
+  ["兴业银行","银行/央国企","全国","https://www.cib.com.cn",true],
+  ["光大银行","银行/央国企","全国","https://job.cebbank.com",true],
+  ["中信银行","银行/央国企","全国","https://job.citicbank.com",true],
+  // 央国企
+  ["国家电网","央国企","全国","https://zhaopin.sgcc.com.cn",true],
+  ["南方电网","央国企","全国","https://zhaopin.csg.cn",true],
+  ["中国石油","央国企","全国","https://zhaopin.cnpc.com.cn",true],
+  ["中国石化","央国企","全国","https://job.sinopec.com",true],
+  ["中国移动","央国企/通信","全国","https://job.10086.cn",true],
+  ["中国联通","央国企/通信","全国","https://chinaunicom.zhiye.com",true],
+  ["中国电信","央国企/通信","全国","https://job.chinatelecom.com.cn",true],
+  ["中国大唐","央国企","全国","https://zhaopin.china-cdt.com",true],
+  ["中国能建","央国企","全国","https://ceec.zhiye.com",true],
+  ["中国铝业","央国企","全国","https://chalco.zhiye.com",true],
+  ["国投电力","央国企","全国","https://sdic.zhiye.com",true],
+  ["矿冶集团","央国企","北京/全国","https://bgrimm.zhiye.com",true],
+  // 通信
+  ["中兴通讯","通信","深圳/南京/西安","https://job.zte.com.cn",true],
+  ["烽火通信","通信","武汉/全国","https://app.mokahr.com/campus-recruitment/whfhtx",true],
+  ["中国铁塔","通信/央国企","全国","https://tower.zhiye.com",true],
+  ["紫光展锐","通信","上海/北京","https://unisoc.zhiye.com",true],
+  ["华信设计院","通信","杭州","https://hxdesign.zhiye.com",true],
+  // 事务所
+  ["天健会计师事务所","事务所","杭州/重庆/全国","https://zhaopin.pccpa.cn",true],
+  ["普华永道","事务所","全国","https://www.pwccn.com/careers",true],
+  ["德勤","事务所","全国","https://careers.deloitte.com",true],
+  ["安永","事务所","全国","https://www.ey.com/zh_cn/careers",true],
+  ["毕马威","事务所","全国","https://www.kpmg.com/cn/careers",true],
+  ["立信会计师事务所","事务所","上海/全国","https://bdo.zhiye.com",true]
+];
+
+/* ==================== 数据存储 ==================== */
+const KEY="campus_board_v1";
+let data=[];
+function load(){
+  const raw=localStorage.getItem(KEY);
+  if(raw){ try{ data=JSON.parse(raw);}catch(e){ data=[]; } }
+  if(!data.length) data=SEED.map(r=>({company:r[0],types:r[1],position:r[2],loc:r[3],status:r[4].slice(),date:r[5],url:r[6],note:r[7]}));
+  save();
+}
+function save(){ localStorage.setItem(KEY,JSON.stringify(data)); }
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2600); }
+
+/* ==================== 渲染：工作台 ==================== */
+function renderBoard(){
+  // 统计卡（口径与漏斗一致）
+  const total=data.length;
+  const applied=data.filter(d=>d.status.includes("已投递")).length;
+  const todo=data.filter(d=>funnelStage(d.status)==="待投").length;
+  const hang=data.filter(d=>funnelStage(d.status)==="淘汰").length;
+  const offer=data.filter(d=>funnelStage(d.status)==="Offer").length;
+  const active=data.filter(d=>["测评","笔试","面试"].includes(funnelStage(d.status))).length;
+  const cards=[
+    ["brand",total,"在库企业"],["blue",applied,"已投递"],["amber",todo,"待投递"],
+    ["cyan",active,"进行中"],["green",offer,"Offer"],["red",hang,"淘汰/挂"]
+  ];
+  document.getElementById("statCards").innerHTML=cards.map(c=>`<div class="stat ${c[0]}"><div class="num">${c[1]}</div><div class="lbl">${c[2]}</div></div>`).join("");
+
+  // 漏斗
+  const stageCnt=Object.fromEntries(STAGES.map(s=>[s,0]));
+  data.forEach(d=>stageCnt[funnelStage(d.status)]++);
+  const max=Math.max(1,...STAGES.map(s=>stageCnt[s]));
+  document.getElementById("funnel").innerHTML=STAGES.map(s=>{
+    const c=stageCnt[s],pct=Math.round(c/max*100);
+    return `<div class="fstep"><div class="name">${s}</div>
+      <div class="bar-wrap"><div class="bar" style="width:${Math.max(pct,c?8:0)}%;background:${STAGE_COLORS[s]}"><span>${c||""}</span></div></div>
+      <div class="cnt">${c}</div></div>`;
+  }).join("");
+
+  // 筛选下拉
+  const statusSel=document.getElementById("fStatus");
+  if(statusSel.options.length<=1){ STATUSES.forEach(s=>statusSel.add(new Option(s,s))); }
+  const appliedSel=document.getElementById("fApplied");
+
+  // 类型 legend
+  const legend=document.getElementById("typeLegend");
+  legend.innerHTML=TYPES.map(t=>`<span><b>${t}</b>: ${data.filter(d=>d.types.split("/").includes(t)).length}</span>`).join("　");
+
+  // 过滤
+  const q=document.getElementById("fCompany").value.trim();
+  const fst=statusSel.value;
+  const floc=document.getElementById("fLoc").value.trim();
+  const fa=appliedSel.value;
+  let list=data.filter(d=>{
+    if(q && !(d.company+d.position).toLowerCase().includes(q.toLowerCase())) return false;
+    if(fst && !d.status.includes(fst)) return false;
+    if(floc && !(d.loc||"").includes(floc)) return false;
+    if(fa==="已投" && !d.status.includes("已投递")) return false;
+    if(fa==="待投" && d.status.includes("已投递")) return false;
+    return true;
+  });
+
+  const tb=document.getElementById("boardBody");
+  if(!list.length){ document.getElementById("boardEmpty").style.display="block"; tb.innerHTML=""; return; }
+  document.getElementById("boardEmpty").style.display="none";
+  tb.innerHTML=list.map((d,i)=>{
+    const idx=data.indexOf(d);
+    const typeBadge=d.types?d.types.split("/").map(t=>`<span class="ctype">${t}</span>`).join(" "):"<span class='ctype' style='background:var(--gray-soft);color:var(--sub)'>未分类</span>";
+    const statusPills=d.status.map(s=>`<span class="status-pill st-${s}">${s}</span>`).join(" ");
+    const url=d.url?`<a class="link" href="${d.url}" target="_blank" rel="noopener">官网 ↗</a>`:"<span class='muted'>—</span>";
+    return `<tr>
+      <td><div class="comp">${d.company||"未命名"}</div>${d.note?`<div class="sub">📝 ${d.note}</div>`:""}</td>
+      <td>${typeBadge}</td>
+      <td>${d.position||"<span class='muted'>—</span>"}</td>
+      <td>${d.loc||"<span class='muted'>—</span>"}</td>
+      <td>${d.date||"<span class='muted'>—</span>"}</td>
+      <td><div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">${statusPills}<select class="status-sel" data-idx="${idx}"><option value="">+设置</option>${STATUSES.map(s=>`<option value="${s}">${s}</option>`).join("")}</select></div></td>
+      <td>${url}</td>
+      <td style="max-width:180px"><div class="sub">${d.note||"—"}</div></td>
+    </tr>`;
+  }).join("");
+
+  document.querySelectorAll(".status-sel").forEach(sel=>{
+    sel.addEventListener("change",function(){
+      const rec=data[this.dataset.idx];
+      if(!this.value) return;
+      if(rec.status.includes(this.value)){ toast("状态已是「"+this.value+"」"); this.value=""; return;}
+      // 结果态互斥
+      const terminal=["已Offer","已拒绝","未通过","简历挂","三面综合面挂"];
+      if(terminal.includes(this.value)){ rec.status=rec.status.filter(s=>!terminal.includes(s)); }
+      rec.status.push(this.value);
+      save(); renderBoard();
+      toast("已更新 "+(rec.company||"记录")+" → "+this.value);
+    });
+  });
+}
+
+/* ==================== 渲染：企业库 ==================== */
+let catType="全部";
+function renderCatalog(){
+  const chips=document.getElementById("catChips");
+  const types=["全部",...TYPES];
+  chips.innerHTML=types.map(t=>`<button class="tag ${catType===t?"active":""}" data-t="${t}">${t}<span class="muted" style="margin-left:4px">${t==="全部"?CATALOG.length:CATALOG.filter(c=>c[1].split("/").includes(t)).length}</span></button>`).join("");
+  chips.querySelectorAll(".tag").forEach(b=>b.addEventListener("click",()=>{catType=b.dataset.t;renderCatalog();}));
+
+  const q=document.getElementById("catSearch").value.trim().toLowerCase();
+  let list=CATALOG.filter(c=>(catType==="全部"||c[1].split("/").includes(catType)) && (!q||c[0].toLowerCase().includes(q)));
+  document.getElementById("catEmpty").style.display=list.length?"none":"block";
+  document.getElementById("catalogGrid").innerHTML=list.map(c=>`
+    <div class="ccard">
+      <div class="cname">${c[0]}<span class="ctype">${c[1]}</span></div>
+      <div class="cloc">📍 ${c[2]}</div>
+      <a class="link" href="${c[3]}" target="_blank" rel="noopener">官方校招入口 ↗</a>
+      <div class="copen">● 2027届校招开放中</div>
+    </div>`).join("");
+}
+
+/* ==================== CSV 导入导出 ==================== */
+function csvEscape(v){ v=(v==null?"":String(v)); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+function exportCSV(){
+  const head=["公司名称","公司属性","投递岗位","工作地点","投递状态","投递日期","校招官网","备注1"];
+  const lines=[head.join(",")];
+  data.forEach(d=>{
+    lines.push([d.company||"",d.types||"",d.position||"",d.loc||"",d.status.join("/"),d.date||"",d.url||"",d.note||""].map(csvEscape).join(","));
+  });
+  const blob=new Blob(["\ufeff"+lines.join("\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="投递跟踪_"+new Date().toISOString().slice(0,10)+".csv";a.click();
+  toast("已导出 "+data.length+" 条记录");
+}
+function importCSV(file){
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const txt=rd.result.replace(/^\ufeff/,"");
+    const rows=parseCSV(txt);
+    if(!rows.length){ toast("CSV 为空或格式无法识别"); return; }
+    const head=rows[0].map(h=>h.trim());
+    const idx=h=>head.findIndex(x=>x.includes(h));
+    const ci=idx("公司名称"),ty=idx("公司属性"),po=idx("投递岗位"),lo=idx("工作地点"),
+          st=idx("投递状态"),dt=idx("投递日期"),ur=idx("校招官网"),no=idx("备注");
+    const imp=[];
+    rows.slice(1).forEach(r=>{
+      if(!r[ci]&&!r[st]) return; // 跳过空行
+      imp.push({
+        company:r[ci]||"", types:(r[ty]||"").replace(/[\/\s]/g,"/").replace(/\/+/g,"/").trim(),
+        position:r[po]||"", loc:r[lo]||"",
+        status:(r[st]||"").split(/[\/,、]/).map(s=>s.trim()).filter(s=>STATUSES.includes(s)),
+        date:(r[dt]||"").trim(), url:r[ur]||"", note:r[no]||""
+      });
+    });
+    if(!imp.length){ toast("没有可导入的有效记录"); return; }
+    // 按公司+岗位去重合并，保留已存在记录的状态
+    data=imp.map(n=>{ const old=data.find(o=>o.company===n.company&&o.position===n.position); return old?{...old,...n,status:n.status.length?n.status:old.status}:n; });
+    save(); renderBoard();
+    toast("导入成功，共 "+imp.length+" 条记录");
+  };
+  rd.readAsText(file);
+}
+function parseCSV(txt){
+  const rows=[];let row=[],cur="",inQ=false;
+  for(let i=0;i<txt.length;i++){const c=txt[i];
+    if(inQ){ if(c==='"'){ if(txt[i+1]==='"'){cur+='"';i++;} else inQ=false; } else cur+=c; }
+    else if(c==='"') inQ=true;
+    else if(c===','){ row.push(cur);cur=""; }
+    else if(c==='\n'){ row.push(cur);rows.push(row);row=[];cur=""; }
+    else if(c!=='\r'){ cur+=c; }
+  }
+  if(cur.length||row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(r=>r.some(x=>x.trim()!==""));
+}
+
+/* ==================== 事件绑定 ==================== */
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+  t.classList.add("active");
+  document.getElementById(t.dataset.page).classList.add("active");
+}));
+document.getElementById("exportBtn").addEventListener("click",exportCSV);
+document.getElementById("importFile").addEventListener("change",e=>{ if(e.target.files[0]) importCSV(e.target.files[0]); e.target.value=""; });
+document.getElementById("catSearch").addEventListener("input",renderCatalog);
+["fCompany","fLoc"].forEach(id=>document.getElementById(id).addEventListener("input",renderBoard));
+["fStatus","fApplied"].forEach(id=>document.getElementById(id).addEventListener("change",renderBoard));
+document.getElementById("clearFilter").addEventListener("click",()=>{
+  document.getElementById("fCompany").value="";
+  document.getElementById("fLoc").value="";
+  document.getElementById("fStatus").value="";
+  document.getElementById("fApplied").value="";
+  renderBoard();
+});
+document.getElementById("addRowBtn").addEventListener("click",()=>{
+  const comp=prompt("企业名称："); if(!comp) return;
+  data.unshift({company:comp,types:"",position:"",loc:"",status:["待投递"],date:"",url:"",note:""});
+  save(); renderBoard(); toast("已新增待投递记录："+comp);
+});
+
+/* 启动 */
+load();
+renderBoard();
+renderCatalog();
+document.getElementById("syncTime").textContent="数据存于本地 · "+data.length+" 条";
+</script>
+</body>
+</html>
